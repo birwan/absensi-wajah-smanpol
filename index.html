@@ -276,6 +276,16 @@ footer {
       <div class="status">
         Sistem siap digunakan untuk pengujian kamera.
       </div>
+
+      <div class="controls">
+        <button class="btn btn-primary" onclick="testBackend()">
+          Periksa Koneksi Database
+        </button>
+      </div>
+
+      <div class="status" id="backendStatus">
+        Backend belum diperiksa.
+      </div>
     </div>
   </section>
 
@@ -529,6 +539,74 @@ function captureImage() {
 }
 
 window.addEventListener('pagehide', stopCamera);
+
+
+/************************************************************
+ * KONEKSI FRONTEND KE GOOGLE APPS SCRIPT
+ ************************************************************/
+
+const API_URL = 'https://script.google.com/macros/s/AKfycbwAb0BB4H3GJJ9s9Y4VhB9SpVib_--VyFtQ9L4oOT28c1mEcR0lmf5dXI2941jFhLZY/exec';
+
+/**
+ * Pemeriksaan koneksi melalui JSONP.
+ */
+function testBackend() {
+
+  const status = document.getElementById('backendStatus');
+
+  status.textContent = 'Menghubungkan ke Google Apps Script...';
+  status.className = 'status';
+
+  const callbackName = 'absensiWajahCallback';
+
+  // Hindari callback ganda.
+  window[callbackName] = function(response) {
+
+    status.textContent = '';
+
+    if (response && response.success &&
+        response.status === 'CONNECTED') {
+
+      status.textContent =
+        'Koneksi berhasil! ' +
+        response.application +
+        ' | Versi ' + response.version +
+        ' | Server: ' + response.serverTime;
+
+      status.className = 'status success';
+
+    } else {
+
+      status.textContent = 'Respons backend tidak valid.';
+      status.className = 'status error';
+
+    }
+
+    delete window[callbackName];
+    script.remove();
+  };
+
+  const script = document.createElement('script');
+
+  script.src =
+    API_URL +
+    '?callback=' + callbackName +
+    '&t=' + Date.now();
+
+  script.onerror = function() {
+
+    status.textContent =
+      'Gagal menghubungkan ke Google Apps Script. Periksa URL deployment.';
+
+    status.className = 'status error';
+
+    delete window[callbackName];
+    script.remove();
+  };
+
+  document.head.appendChild(script);
+}
+
 
 </script>
 
